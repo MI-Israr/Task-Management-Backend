@@ -3,18 +3,11 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 export const generateToken = (userId) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 };
 export const registerUser = async (req, res) => {
-  try {
-  } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
-  }
-};
-
-export const loginUser = async (req, res) => {
   try {
     const { name, email, password, profileImageUrl, adminInviteToken } =
       req.body;
@@ -25,7 +18,6 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    //Determine user role: Admin if correct token is provided, otherwise Member
     let role = "member";
     if (
       adminInviteToken &&
@@ -36,7 +28,6 @@ export const loginUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    //create new user
     const user = await User.create({
       name,
       email,
@@ -53,7 +44,13 @@ export const loginUser = async (req, res) => {
       role: user.role,
       token: generateToken(user._id),
     });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
 
+export const loginUser = async (req, res) => {
+  try {
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
