@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-const protect = async (req, res, next) => {
+export const protect = async (req, res, next) => {
   try {
     let token;
     if (token && token.startsWith("Bearer")) {
