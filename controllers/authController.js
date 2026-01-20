@@ -25,6 +25,7 @@ export const registerUser = async (req, res) => {
     ) {
       role = "admin";
     }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -40,8 +41,8 @@ export const registerUser = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
-      profileImageUrl: user.profileImageUrl,
       role: user.role,
+      profileImageUrl: user.profileImageUrl,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -56,10 +57,13 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Invalid emial or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid emial or password" });
+    }
 
     res.json({
       _id: user._id,
