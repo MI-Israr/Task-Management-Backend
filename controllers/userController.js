@@ -24,7 +24,7 @@ export const getUsers = async (req, res) => {
           inProgressTasks,
           completedTasks,
         };
-      })
+      }),
     );
     res.json(usersWithTaskCounters);
   } catch (error) {
@@ -44,4 +44,4 @@ export const getUserById = async (req, res) => {
   }
 };
 
-export const deleteUser = async (req, res) => {}
+export const deleteUser = async (req, res) => {};
