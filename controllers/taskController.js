@@ -225,48 +225,118 @@ export const updateTaskChecklist = async (req, res) => {
   }
 };
 
+// export const getDashboardData = async (req, res) => {
+//   try {
+//     const totalTasks = await Task.countDocuments();
+//     const pendingTasks = await Task.countDocuments({ status: "Pending" });
+//     // const inProgressTasks = await Task.countDocuments({ status: "In Progress" });
+//     const completedTasks = await Task.countDocuments({ status: "Completed" });
+//     const overdueTasks = await Task.countDocuments({
+//       status: { $ne: "Completed" },
+//       dueDate: { $lt: new Date() },
+//     });
+
+//     const taskStatuses = ["Pending", "In Progress", "Completed"];
+//     const taskDistributionRaw = await Task.aggregate([
+//       {
+//         $group: {
+//           _id: "$status",
+//           count: { $sum: 1 },
+//         },
+//       },
+//     ]);
+//     const taskDistribution = taskStatuses.reduce((acc, status) => {
+//       const formattedKey = status.replace(/\s+/g, "");
+//       acc[formattedKey] =
+//         taskDistributionRaw.find((item) => item._id === status)?.count || 0;
+//       return acc;
+//     }, {});
+//     taskDistribution["All"] = totalTasks;
+
+//     const taskPriorities = ["Low", "Medium", "High"];
+//     const taskPriorityLevelRaw = await Task.aggregate([
+//       {
+//         $group: {
+//           _id: "$priority",
+//           count: { $sum: 1 },
+//         },
+//       },
+//     ]);
+//     const taskPriorityLevel = taskPriorities.reduce((acc, priority) => {
+//       acc[priority] =
+//         taskPriorityLevelRaw.find((item) => item._id === priority)?.count || 0;
+//       return acc;
+//     }, {});
+
+//     const recentTasks = await Task.find()
+//       .sort({ createdAt: -1 })
+//       .limit(10)
+//       .select("title status priority createdAt");
+
+//     res.status(200).json({
+//       statistics: {
+//         totalTasks,
+//         pendingTasks,
+//         completedTasks,
+//         overdueTasks,
+//       },
+//       charts: {
+//         taskDistribution,
+//         taskPriorityLevel,
+//       },
+//       recentTasks,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server Error", error: error.message });
+//   }
+// };
+
 export const getDashboardData = async (req, res) => {
   try {
     const totalTasks = await Task.countDocuments();
-    const pendingTasks = await Task.countDocuments({ status: "Pending" });
-    // const inProgressTasks = await Task.countDocuments({ status: "In Progress" });
-    const completedTasks = await Task.countDocuments({ status: "Completed" });
+
+    // 1. Fetch counts based on lowercase status (matches Schema)
+    const pendingTasks = await Task.countDocuments({ status: "pending" });
+    const completedTasks = await Task.countDocuments({ status: "completed" });
     const overdueTasks = await Task.countDocuments({
-      status: { $ne: "Completed" },
+      status: { $ne: "completed" }, // lowercase
       dueDate: { $lt: new Date() },
     });
 
-    const taskStatuses = ["Pending", "In Progress", "Completed"];
+    // 2. Aggregate Status (Handle lowercase from DB)
     const taskDistributionRaw = await Task.aggregate([
       {
         $group: {
-          _id: "$status",
+          _id: "$status", // Returns "pending", "in progress", "completed"
           count: { $sum: 1 },
         },
       },
     ]);
-    const taskDistribution = taskStatuses.reduce((acc, status) => {
-      const formattedKey = status.replace(/\s+/g, "");
-      acc[formattedKey] =
-        taskDistributionRaw.find((item) => item._id === status)?.count || 0;
-      return acc;
-    }, {});
-    taskDistribution["All"] = totalTasks;
 
-    const taskPriorities = ["Low", "Medium", "High"];
+    // Map the raw data to an object { pending: 5, inprogress: 3, completed: 2 }
+    const taskDistribution = {
+      pending: taskDistributionRaw.find((i) => i._id === "pending")?.count || 0,
+      inprogress:
+        taskDistributionRaw.find((i) => i._id === "in progress")?.count || 0,
+      completed:
+        taskDistributionRaw.find((i) => i._id === "completed")?.count || 0,
+    };
+
+    // 3. Aggregate Priority (Handle lowercase from DB)
     const taskPriorityLevelRaw = await Task.aggregate([
       {
         $group: {
-          _id: "$priority",
+          _id: "$priority", // Returns "low", "medium", "high"
           count: { $sum: 1 },
         },
       },
     ]);
-    const taskPriorityLevel = taskPriorities.reduce((acc, priority) => {
-      acc[priority] =
-        taskPriorityLevelRaw.find((item) => item._id === priority)?.count || 0;
-      return acc;
-    }, {});
+
+    const taskPriorityLevel = {
+      low: taskPriorityLevelRaw.find((i) => i._id === "low")?.count || 0,
+      medium: taskPriorityLevelRaw.find((i) => i._id === "medium")?.count || 0,
+      high: taskPriorityLevelRaw.find((i) => i._id === "high")?.count || 0,
+    };
 
     const recentTasks = await Task.find()
       .sort({ createdAt: -1 })
